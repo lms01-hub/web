@@ -52,12 +52,16 @@
             .pc-guide{
                 display: none;
             }
-            /* 여기서 모바일 버튼 크기 키우기 */
+            /* 모바일 버튼 크기 키우기 */
             .controls button {
-                font-size: 18px;
-                padding: 15px 30px;
-                margin: 10px;
-                border-radius: 6px;
+                font-size: 20px !important;
+                padding: 18px 36px !important;
+                margin: 12px !important;
+                border-radius: 8px !important;
+                /* 터치감 개선 */
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: transparent;
+                user-select: none;
             }
         }
         #restartBtn {
@@ -76,10 +80,10 @@
 <body>
     <canvas id="canvas"></canvas>
     <div class="controls">
-        <button id="leftBtn"></button>
-        <button id="rightBtn"></button>
-        <button id="upBtn"></button>
-        <button id="downBtn"></button>
+        <button id="leftBtn">왼쪽</button>
+        <button id="rightBtn">오른쪽</button>
+        <button id="upBtn">위</button>
+        <button id="downBtn">아래</button>
     </div>
     <button id="restartBtn" style="display:none;">게임 재시작</button>
 
