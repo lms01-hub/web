@@ -45,11 +45,6 @@
             -배경색은 연한 베이지색(#DCD7C9)
             -block형으로 만들어서 가운데 정렬이 가능하게 함
             -margin을 auto로 설정하여 가로 중앙에 배치 */
-
-
-
-
-
         }
         .pc-guide{
             display: none; /*화면에 보이지 않게함*/
@@ -144,33 +139,38 @@
         const drawingPen =drawingBoard.getContext('2d');
         const restartBtn=document.getElementById('restartBtn');
         //캔버스 크기를 CSS와 맞춰줌(중요!)
-        drawingBoard.width=drawingBoard.clientWidth;
-        drawingBoard.height=drawingBoard.clientHeight;
-        
-        let x=20;
-        let y=570;
-        let count=0
-        
-        const enemyX=300;
-        const enemyY=300;
-        const moveAmout=5; //주인공 이동속도
-        const rand_0_590=Math.floor(Math.random()*591);
-        
+        function resizeCanvas(){
+            drawingBoard.width = drawingBoard.clientWidth;
+            drawingBoard.height = drawingBoard.clientHeight;
+        }
+        resizeCanvas();
+
+        let x, y;
+        let count=0;
+        let enemyCoords = [];
+        let life = 0;
+        let time = 0;
+        let timerId = null;
+
+        const heroSize = 10;
+        const enemySize = 20;
+        const moveAmount = 5;
+
         //주인공 이동함수
         function moveRight(){
-            x=x+moveAmout;
+            x=x+moveAmount;
         }
 
         function moveLeft(){
-            x=x-moveAmout;
+            x=x-moveAmount;
         }
 
         function moveDown(){
-            y=y+moveAmout;
+            y=y+moveAmount;
         }
 
         function moveUp(){
-            y=y-moveAmout;
+            y=y-moveAmount;
         }
 
         //1-4주인공 이동제한
@@ -178,14 +178,14 @@
             if(x<0){ //왼쪽 이동제한
                 x=0;
             }
-            if(x>590){
-                x=590;
+            if(x > drawingBoard.width - heroSize){
+                x = drawingBoard.width - heroSize;
             }
             if(y<0){
                 y=0;
             }
-            if(y>590){
-                y=590;
+            if(y > drawingBoard.height - heroSize){
+                y = drawingBoard.height - heroSize;
             }
             
         }
@@ -195,13 +195,10 @@
             drawingPen.font='10px sans-serif';
             drawingPen.fillText(`x: ${x} y: ${y}`, 55, 20); //1-4 주인공 좌표출력
         }
-        let time = 0;
-        let timerId = null;
-
         function formatTime(sec) {
-        const minutes = String(Math.floor(sec / 60)).padStart(2, '0');
-        const seconds = String(sec % 60).padStart(2, '0');
-        return `${minutes}:${seconds} 초`;
+            const minutes = String(Math.floor(sec / 60)).padStart(2, '0');
+            const seconds = String(sec % 60).padStart(2, '0');
+            return `${minutes}:${seconds} 초`;
         }
         function drawtime(){
             const canvasWidth = drawingBoard.width;
@@ -223,128 +220,121 @@
         function lifeend(){
             const canvasWidth = drawingBoard.width;
             const canvasHeight = drawingBoard.height;
-
-            drawingPen.fillStyle = 'black';  
+            drawingPen.fillStyle = 'black';
             drawingPen.font = '20px sans-serif';
-            drawingPen.textAlign = 'center';     
-            drawingPen.textBaseline = 'middle';  
-            drawingPen.fillText(`미션해결 시간 ${formatTime(time)}`, canvasWidth / 2, canvasHeight / 2);
-
+            drawingPen.textAlign = 'center';
+            drawingPen.textBaseline = 'middle';
+            drawingPen.fillText(`미션해결 시간 ${formatTime(time)}`, canvasWidth/2, canvasHeight/2);
             restartBtn.style.display = 'block';
         }
-        let enemyCoords = [];
-        let life=1;
-        function drawenemy1() { // 적 사각형 만들기
-            if (count === 0 && enemyCoords.length === 0) {
-        // 난수 좌표 2개 생성
-                for (let i = 0; i < 5; i++) {
-                    let randomX = Math.floor(Math.random() * 571);
-                    let randomY = Math.floor(Math.random() * 571);
-                    enemyCoords.push({ x: randomX, y: randomY });
-                    
-                }
-                life=enemyCoords.length;
-            }
-            if(count===0){
-                drawingPen.fillStyle = 'red';
-                enemyCoords.forEach(enemy => {
-                drawingPen.fillRect(enemy.x, enemy.y, 20, 20);
-                });
-            }
-
-    // 저장된 좌표에 사각형 그리기
-            
-        }
-        
-
-            
-                
-                
-            
-            
-        
-        function collision1(){
-            
-           for(let i=0;i<enemyCoords.length;i++){
-                let enemy=enemyCoords[i];
-                if((x+10)>enemy.x && x<(enemy.x+20) && (y+10)>enemy.y && y<(enemy.y+20)){
-                    count=1;
-                    enemyCoords.splice(i, 1); // 충돌한 적 하나만 삭제
-                    count = 0;
-                    life=life-1;
-                    break;
-                }
-           }
-           
-        }
-         
-
-            
-        
-        
-        //주인공출력함수
         function drawHero(){
             drawingPen.fillStyle='black';
-            drawingPen.fillRect(x,y,10,10); //네모크기
+            drawingPen.fillRect(x,y,heroSize,heroSize);
         }
-        //화면출력
+        //적 그리기
+        function drawEnemy(){
+            drawingPen.fillStyle='red';
+            for(let i=0; i<enemyCoords.length; i++){
+                let enemy=enemyCoords[i];
+                drawingPen.fillRect(enemy.x, enemy.y, enemySize, enemySize);
+            }
+        }
+        //적 좌표 랜덤 생성
+        function generateEnemies(num) {
+            enemyCoords = [];
+            let maxX = drawingBoard.width - enemySize;
+            let maxY = drawingBoard.height - enemySize;
+            for(let i=0; i<num; i++){
+                let randomX = Math.floor(Math.random() * maxX);
+                let randomY = Math.floor(Math.random() * maxY);
+                enemyCoords.push({x: randomX, y: randomY});
+            }
+            life = enemyCoords.length;
+        }
+        generateEnemies(5);
+
+        //충돌 체크
+        function collisionCheck(){
+            for(let i=0; i<enemyCoords.length; i++){
+                let enemy=enemyCoords[i];
+                if(
+                    x+heroSize > enemy.x &&
+                    x < enemy.x + enemySize &&
+                    y + heroSize > enemy.y &&
+                    y < enemy.y + enemySize
+                ){
+                    enemyCoords.splice(i,1);
+                    life--;
+                    break;
+                }
+            }
+        }
+        //게임 초기화 함수
+        function initGame() {
+            resizeCanvas();
+            x=20;
+            y=drawingBoard.height - heroSize - 10;
+            count=0;
+            generateEnemies(5);
+            time=0;
+            restartBtn.style.display = 'none';
+            if(timerId) clearInterval(timerId);
+            timerId = setInterval(() => {
+                if(life > 0){
+                    time++;
+                } else {
+                    clearInterval(timerId);
+                }
+            }, 1000);
+        }
+        //window 리사이즈 시 캔버스 크기 재설정 + 게임 초기화
+        window.addEventListener('resize', () => {
+            initGame();
+        });
+        //그리기 함수
         function draw(){
-            drawingPen.fillText(`x: ${x} y: ${y}`,10,20); //텍스트출력
-            drawingPen.clearRect(0,0,canvas.width,canvas.height); //화면지우rl
-            if(life===0){
+            drawingPen.clearRect(0,0,drawingBoard.width,drawingBoard.height);
+            if(life === 0){
                 drawHero();
                 drawCoordinate();
-                drawtime(time);
-                lifeend(); // 버튼 표시 및 메시지 그리기
-                return; // 여기서 return은 괜찮아 (화면 갱신 종료)
+                drawtime();
+                lifeend();
+                return;
             }
-            
-            drawenemy1(); 
-            collision1();
+            drawEnemy();
+            collisionCheck();
             drawHero();
-            move_limit(); //이동제한 함수호출
-            drawCoordinate(); //텍스트출력함수호출
-            drawtime(time);
-            
+            move_limit();
+            drawCoordinate();
+            drawtime();
         }
-        setInterval(draw,16); //60FPS
+        setInterval(draw,16);
 
-        document.addEventListener('keydown',(e)=>{
+        //키보드 방향키로 이동
+        document.addEventListener('keydown', (e) => {
             switch(e.key){
-                case 'ArrowLeft': moveLeft(); break;
-                case 'ArrowRight': moveRight(); break;
-                case 'ArrowUp': moveUp(); break;
-                case 'ArrowDown': moveDown(); break;
+                case "ArrowLeft": moveLeft(); break;
+                case "ArrowRight": moveRight(); break;
+                case "ArrowUp": moveUp(); break;
+                case "ArrowDown": moveDown(); break;
             }
         });
-
-        document.getElementById('leftBtn').addEventListener('click',moveLeft);
-        document.getElementById('rightBtn').addEventListener('click',moveRight);
-        document.getElementById('upBtn').addEventListener('click',moveUp);
-        document.getElementById('downBtn').addEventListener('click',moveDown);
+        //버튼 클릭으로 이동
+        document.getElementById('leftBtn').addEventListener('click', moveLeft);
+        document.getElementById('rightBtn').addEventListener('click', moveRight);
+        document.getElementById('upBtn').addEventListener('click', moveUp);
+        document.getElementById('downBtn').addEventListener('click', moveDown);
+        //재시작 버튼 클릭
         restartBtn.addEventListener('click', () => {
-    // 초기 위치, 상태 초기화
-        x = 20;
-        y = 570;
-        enemyCoords = [];
-        count = 0;
-        life = 5;  // 적 5개로 초기화 (원하는 적 수에 맞게 조절)
-        time = 0;
-        restartBtn.style.display = 'none'; // 버튼 숨김
-    
-    // 타이머 다시 시작
-        clearInterval(timerId);
-        timerId = setInterval(() => {
-            if (life > 0) {
-                time++;
-            } else {
-                clearInterval(timerId);
-            }
-        }, 1000);
+            initGame();
         });
-     </script>
+        //초기 게임 시작
+        initGame();
+
+    </script>
 </body>
 </html>
+
 <!-- html 문서 끝-->
 
 <!--ㄴ
