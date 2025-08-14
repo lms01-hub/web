@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<!-- HTML5 문서임을 선언하는 코드 (웹 브라우저에게 최신 문법 사용을 알림)-->
+<html lang="en">
+<!-- 이 문서의 언어가 영어임을 표시, 한글 설명이 많다면 lang="ko"로-->
+<head>
+    <meta charset="UTF-8" />
+    <!-- 문자 인코딩을 UTF-8로 설정(한글 포함 다양한 언어를 지원)-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <!-- 화면 크기에 맞게 웹페이지를 조절하여 보여줌(모바일 기기 대응용)-->
+     <!-- meta
+      메타 태그는 웹페이지의 정보를 브라우저나 검색엔진에게 알려주는 태그입니다.
+      실제로 화면에 보이지는 않지만 기능적으로 매우 중요합니다.
+
+      name="viewport"
+      viewport는 사용자가 보는 웹페이지의 보이는 영역(화면 창)을 의미합니다.
+      이 설정은 화면 크기에 따라 웹페이지가 어떻게 보일지를 조절합니다.
+      
+      content="width=device-width"
+      이 부분은 웹페이지의 너비를 사용자의 기기 너비에 맞춘다는 의미입니다.
+      예: 아이폰, 갤럭시 같은 스마트폰의 실제 너비에 맞게 페이지를 자동으로 맞춤
+      
+      initial-scale=1.0
+      **처음 화면을 볼 때의 확대 비율(줌 레벨)**을 1로 설정합니다.
+      1.0은 원래 크기, 즉 확대나 축소없이 화면을 그대로 보여준다는 뜻입니다.
+      만약 2.0이라면 처음부터 2배 확대된 상태로 보이게 됩니다.-->
+
+    <title>Web Animation(canvas_js_css)[1단원-3]</title>
+    <!-- 웹 브라우저 탭에 보이는 제목 설정-->
+    <style>
+        body{
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            font-family: sans-serif;
+        }
+        /* body(전체 페이지) 기본 설정:
+            -바깝 여백(margin)과 안쪽 여백(padding)제거
+            -안의 글자나 요소를 가운데 정렬
+            -글꼴은 기본 산세리프(획이 없는 깔끔한 글꼴)로 설정 */
+        #canvas{
+            background: #dcd7c9;
+            display: block;
+            margin: 0 auto;
+        /* id가 canvas인 요소(캔버스 박스)의 기본 스타일:
+            -배경색은 연한 베이지색(#DCD7C9)
+            -block형으로 만들어서 가운데 정렬이 가능하게 함
+            -margin을 auto로 설정하여 가로 중앙에 배치 */
+
+
+
+
+
+        }
+        .pc-guide{
+            display: none; /*화면에 보이지 않게함*/
+            margin-top: 10px;  /*위쪽여백*/
+            font-size: 16px; /*버튼 글자크기*/
+            color: #333; /*글자색*/
+            font-weight: bold; /*글자굵게*/
+        }
+        @media (min-width: 769px){
+            #canvas{
+                width: 600px;
+                height: 600px;
+            }
+            .pc-guide{
+                display: block; /*pc가이디를 pc에서 접속시 보이게함*/
+            }
+        }
+        .controls{
+            display: none;
+            margin-top: 10px;
+        }
+        .controls button{
+            font-size: 10px;
+            padding: 10px 20px;
+            margin: 5px;
+        }
+
+        @media(max-width: 768px){
+            #canvas{
+                width: 100vw; /*스마트폰 화면 canvas가로 전체크기로함*/
+                height: 100vw; /*화면 canvas 세로=가로(정사각형)*/
+            }
+            .controls{
+                display: block;
+            }
+            .pc-guide{
+                display: none;
+            }
+        }
+        #restartBtn {
+        margin-top: 20px;
+        font-size: 14px;
+        padding: 10px 20px;
+        font-weight: bold;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+}
+        /* 화면이 769픽셀보다 넓은 (주로 pc) 환경에서는
+        캔버스 크기를 600x600 픽셀로 고정함 */
+
+        /*
+            @media (min-width:769px)
+            이것은 **미디어 쿼리(media Query)**라고 해요.
+            "화면의 가로길이가 769픽셀 이상일 때만" 아래 스타일을 적용하라는 뜻입니다.
+            즉, 화면이 클 경우(태블릿, 노트북, pc 등) 이 조건이 참이 됩니다.
+            참고:
+            스마트폰은 대부분 가로 길이가 768px이하
+            테블릿부터는 보통 769px이상
+
+            #canvas {width: 600px; height: 600px;}
+            조건이 맞을때(min-width: 769px), 이 안의 css가 실행됩니다.
+            즉, 캔버스의 크기를 너비 600px, 높이 600px로 고정합니다. 
+            큰 화면(pc나 태블릿)에서는 정사각형(600x600)의 고정된 캔버스를 보게 됩니다.
+
+            왜 이렇게 할까?
+            웹사이트는  **다양항 하면 크기(스마트폰,태블릿,노트북 등)**에서 잘 보여야 합니다.
+            그래서 미디어 쿼리를 사용해서 화면 크기에 따라 다른 디자인을 적용할 수 있게 설정하게 됩니다.
+            */
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="controls">
+        <button id="leftBtn"></button>
+        <button id="rightBtn"></button>
+        <button id="upBtn"></button>
+        <button id="downBtn"></button>
+          
+    </div>
+    <button id="restartBtn" style="display:none;">게임 재시작</button>
+
+    <div class="pc-guide">
+        PC에서 접속했습니다. 방향키로 이동하세요. <br>
+        스마트폰에서 접속 시 보이는 버튼으로 이동하세요.
+    </div>
+    <!-- 그림이나 애니메이션을 그릴 수 있는 html,캔버스 id가 canvas인 요소 추가-->
+     <script>
+        const drawingBoard =document.getElementById('canvas');
+        const drawingPen =drawingBoard.getContext('2d');
+        const restartBtn=document.getElementById('restartBtn');
+        //캔버스 크기를 CSS와 맞춰줌(중요!)
+        drawingBoard.width=drawingBoard.clientWidth;
+        drawingBoard.height=drawingBoard.clientHeight;
+        
+        let x=20;
+        let y=570;
+        let count=0
+        
+        const enemyX=300;
+        const enemyY=300;
+        const moveAmout=5; //주인공 이동속도
+        const rand_0_590=Math.floor(Math.random()*591);
+        
+        //주인공 이동함수
+        function moveRight(){
+            x=x+moveAmout;
+        }
+
+        function moveLeft(){
+            x=x-moveAmout;
+        }
+
+        function moveDown(){
+            y=y+moveAmout;
+        }
+
+        function moveUp(){
+            y=y-moveAmout;
+        }
+
+        //1-4주인공 이동제한
+        function move_limit(){
+            if(x<0){ //왼쪽 이동제한
+                x=0;
+            }
+            if(x>590){
+                x=590;
+            }
+            if(y<0){
+                y=0;
+            }
+            if(y>590){
+                y=590;
+            }
+            
+        }
+
+        function drawCoordinate(){
+            drawingPen.fillStyle='black';
+            drawingPen.font='10px sans-serif';
+            drawingPen.fillText(`x: ${x} y: ${y}`, 55, 20); //1-4 주인공 좌표출력
+        }
+        let time = 0;
+        let timerId = null;
+
+        function formatTime(sec) {
+        const minutes = String(Math.floor(sec / 60)).padStart(2, '0');
+        const seconds = String(sec % 60).padStart(2, '0');
+        return `${minutes}:${seconds} 초`;
+        }
+        function drawtime(){
+            const canvasWidth = drawingBoard.width;
+            drawingPen.fillStyle = 'black';  
+            drawingPen.font = '20px sans-serif';
+            drawingPen.textAlign = 'center';     
+            drawingPen.textBaseline = 'top'; 
+            drawingPen.fillText(formatTime(time), canvasWidth/2,0);   
+            drawingPen.textAlign = 'right';
+            drawingPen.fillText(`RED no ${life}`, canvasWidth - 10, 0);
+        }
+        timerId = setInterval(() => {
+            if (life > 0) {
+                time++;
+            } else {
+                clearInterval(timerId); // 생명 없으면 멈춤
+            }
+        }, 1000);
+        function lifeend(){
+            const canvasWidth = drawingBoard.width;
+            const canvasHeight = drawingBoard.height;
+
+            drawingPen.fillStyle = 'black';  
+            drawingPen.font = '20px sans-serif';
+            drawingPen.textAlign = 'center';     
+            drawingPen.textBaseline = 'middle';  
+            drawingPen.fillText(`미션해결 시간 ${formatTime(time)}`, canvasWidth / 2, canvasHeight / 2);
+
+            restartBtn.style.display = 'block';
+        }
+        let enemyCoords = [];
+        let life=1;
+        function drawenemy1() { // 적 사각형 만들기
+            if (count === 0 && enemyCoords.length === 0) {
+        // 난수 좌표 2개 생성
+                for (let i = 0; i < 5; i++) {
+                    let randomX = Math.floor(Math.random() * 571);
+                    let randomY = Math.floor(Math.random() * 571);
+                    enemyCoords.push({ x: randomX, y: randomY });
+                    
+                }
+                life=enemyCoords.length;
+            }
+            if(count===0){
+                drawingPen.fillStyle = 'red';
+                enemyCoords.forEach(enemy => {
+                drawingPen.fillRect(enemy.x, enemy.y, 20, 20);
+                });
+            }
+
+    // 저장된 좌표에 사각형 그리기
+            
+        }
+        
+
+            
+                
+                
+            
+            
+        
+        function collision1(){
+            
+           for(let i=0;i<enemyCoords.length;i++){
+                let enemy=enemyCoords[i];
+                if((x+10)>enemy.x && x<(enemy.x+20) && (y+10)>enemy.y && y<(enemy.y+20)){
+                    count=1;
+                    enemyCoords.splice(i, 1); // 충돌한 적 하나만 삭제
+                    count = 0;
+                    life=life-1;
+                    break;
+                }
+           }
+           
+        }
+         
+
+            
+        
+        
+        //주인공출력함수
+        function drawHero(){
+            drawingPen.fillStyle='black';
+            drawingPen.fillRect(x,y,10,10); //네모크기
+        }
+        //화면출력
+        function draw(){
+            drawingPen.fillText(`x: ${x} y: ${y}`,10,20); //텍스트출력
+            drawingPen.clearRect(0,0,canvas.width,canvas.height); //화면지우rl
+            if(life===0){
+                drawHero();
+                drawCoordinate();
+                drawtime(time);
+                lifeend(); // 버튼 표시 및 메시지 그리기
+                return; // 여기서 return은 괜찮아 (화면 갱신 종료)
+            }
+            
+            drawenemy1(); 
+            collision1();
+            drawHero();
+            move_limit(); //이동제한 함수호출
+            drawCoordinate(); //텍스트출력함수호출
+            drawtime(time);
+            
+        }
+        setInterval(draw,16); //60FPS
+
+        document.addEventListener('keydown',(e)=>{
+            switch(e.key){
+                case 'ArrowLeft': moveLeft(); break;
+                case 'ArrowRight': moveRight(); break;
+                case 'ArrowUp': moveUp(); break;
+                case 'ArrowDown': moveDown(); break;
+            }
+        });
+
+        document.getElementById('leftBtn').addEventListener('click',moveLeft);
+        document.getElementById('rightBtn').addEventListener('click',moveRight);
+        document.getElementById('upBtn').addEventListener('click',moveUp);
+        document.getElementById('downBtn').addEventListener('click',moveDown);
+        restartBtn.addEventListener('click', () => {
+    // 초기 위치, 상태 초기화
+        x = 20;
+        y = 570;
+        enemyCoords = [];
+        count = 0;
+        life = 5;  // 적 5개로 초기화 (원하는 적 수에 맞게 조절)
+        time = 0;
+        restartBtn.style.display = 'none'; // 버튼 숨김
+    
+    // 타이머 다시 시작
+        clearInterval(timerId);
+        timerId = setInterval(() => {
+            if (life > 0) {
+                time++;
+            } else {
+                clearInterval(timerId);
+            }
+        }, 1000);
+        });
+     </script>
+</body>
+</html>
+<!-- html 문서 끝-->
+
+<!--ㄴ
+1.html이란?  웹사이트의 모습을 기술하기 위한 마크업 언어
+2.html5란?   웹 페이지를 만들기 위한 마크업 언어인 HTML의 최신 표준
+3.canvas란?   스크립트(보통은 JavaScript)를 사용하여 그림을 그리는 데에 사용됩니다. 
+4.css란?  웹 문서의 디자인 및 레이아웃을 담당하는 스타일 시트 언어
+5.반응형 홈페이지란? 다양한 크기의 화면 (PC, 태블릿, 스마트폰 등)에서 최적화된 사용자 경험을 제공하도록 설계된 웹 페이지
+
+
+1.웹 호스팅이란? 웹사이트나 웹 애플리케이션을 인터넷에 공개하기 위해 필요한 서버 공간과 관련 서비스를 제공하는 것
+2.URL이란?  인터넷에서 웹 페이지, 이미지, 비디오 등 리소스의 위치를 가리키는 문자열
+3.IP주소란?  인터넷 프로토콜(Internet Protocol)의 약자로, 인터넷이 통하는 네트워크에서 어떤 정보를 수신하고 송신하는 통신에 대한 규약
+4.도메인네임이란?->  웹사이트나 온라인 서비스를 식별하고 접근하는 데 사용되는 고유한 이름
