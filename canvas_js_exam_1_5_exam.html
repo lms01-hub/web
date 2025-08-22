@@ -1,253 +1,262 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Web Animation(canvas_js_css)[1단원-3]</title>
-    <style>
-        body{
-            margin: 0;
-            padding: 0;
-            text-align: center;
-            font-family: sans-serif;
-        }
-        #canvas{
-            background: #dcd7c9;
-            display: block;
-            margin: 0 auto;
-        }
-        .pc-guide{
-            display: none;
-            margin-top: 10px;
-            font-size: 16px;
-            color: #333;
-            font-weight: bold;
-        }
-        @media (min-width: 769px){
-            #canvas{
-                width: 600px;
-                height: 600px;
-            }
-            .pc-guide{
-                display: block;
-            }
-        }
-        .controls{
-            display: none;
-            margin-top: 10px;
-        }
-        .controls button{
-            font-size: 10px;
-            padding: 10px 20px;
-            margin: 5px;
-        }
-        @media(max-width: 768px){
-            #canvas{
-                width: 100vw;
-                height: 100vw;
-            }
-            .controls{
-                display: block;
-            }
-            .pc-guide{
-                display: none;
-            }
-            /* 모바일 버튼 크기 키우기 */
-            .controls button {
-                font-size: 20px !important;
-                padding: 18px 36px !important;
-                margin: 12px !important;
-                border-radius: 8px !important;
-                /* 터치감 개선 */
-                touch-action: manipulation;
-                -webkit-tap-highlight-color: transparent;
-                user-select: none;
-            }
-        }
-        #restartBtn {
-            margin-top: 20px;
-            font-size: 14px;
-            padding: 10px 20px;
-            font-weight: bold;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Web Animation(canvas_js_css)[1단원-3]</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      font-family: sans-serif;
+    }
+    #canvas {
+      background: #dcd7c9;
+      display: block;
+      margin: 0 auto;
+    }
+    .pc-guide {
+      display: none;
+      margin-top: 10px;
+      font-size: 16px;
+      color: #333;
+      font-weight: bold;
+    }
+    @media (min-width: 769px) {
+      #canvas {
+        width: 600px;
+        height: 600px;
+      }
+      .pc-guide {
+        display: block;
+      }
+    }
+    .controls {
+      display: none;
+      margin-top: 10px;
+    }
+    .controls button {
+      font-size: 10px;
+      padding: 10px 20px;
+      margin: 5px;
+    }
+    @media (max-width: 768px) {
+      #canvas {
+        width: 100vw;
+        height: 100vw;
+      }
+      .controls {
+        display: block;
+      }
+      .pc-guide {
+        display: none;
+      }
+      .controls button {
+        font-size: 20px !important;
+        padding: 18px 36px !important;
+        margin: 12px !important;
+        border-radius: 8px !important;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+      }
+    }
+    #restartBtn {
+      margin-top: 20px;
+      font-size: 14px;
+      padding: 10px 20px;
+      font-weight: bold;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-    <canvas id="canvas"></canvas>
-    <div class="controls">
-        <button id="leftBtn">왼쪽</button>
-        <button id="rightBtn">오른쪽</button>
-        <button id="upBtn">위</button>
-        <button id="downBtn">아래</button>
-    </div>
-    <button id="restartBtn" style="display:none;">게임 재시작</button>
+  <canvas id="canvas"></canvas>
 
-    <div class="pc-guide">
-        PC에서 접속했습니다. 방향키로 이동하세요. <br>
-        스마트폰에서 접속 시 보이는 버튼으로 이동하세요.
-    </div>
-    <script>
-        const drawingBoard =document.getElementById('canvas');
-        const drawingPen =drawingBoard.getContext('2d');
-        const restartBtn=document.getElementById('restartBtn');
-        drawingBoard.width=drawingBoard.clientWidth;
-        drawingBoard.height=drawingBoard.clientHeight;
-        
-        let x=20;
-        let y=570;
-        let count=0
-        
-        const enemyX=300;
-        const enemyY=300;
-        const moveAmout=5;
-        const rand_0_590=Math.floor(Math.random()*591);
-        
-        function moveRight(){
-            x=x+moveAmout;
-        }
-        function moveLeft(){
-            x=x-moveAmout;
-        }
-        function moveDown(){
-            y=y+moveAmout;
-        }
-        function moveUp(){
-            y=y-moveAmout;
-        }
-        function move_limit(){
-            if(x<0){ x=0; }
-            if(x>590){ x=590; }
-            if(y<0){ y=0; }
-            if(y>590){ y=590; }
-        }
-        function drawCoordinate(){
-            drawingPen.fillStyle='black';
-            drawingPen.font='10px sans-serif';
-            drawingPen.fillText(`x: ${x} y: ${y}`, 55, 20);
-        }
-        let time = 0;
-        let timerId = null;
+  <div class="controls">
+    <button id="leftBtn">왼쪽</button>
+    <button id="rightBtn">오른쪽</button>
+    <button id="upBtn">위</button>
+    <button id="downBtn">아래</button>
+  </div>
 
-        function formatTime(sec) {
-            const minutes = String(Math.floor(sec / 60)).padStart(2, '0');
-            const seconds = String(sec % 60).padStart(2, '0');
-            return `${minutes}:${seconds} 초`;
-        }
-        function drawtime(){
-            const canvasWidth = drawingBoard.width;
-            drawingPen.fillStyle = 'black';  
-            drawingPen.font = '20px sans-serif';
-            drawingPen.textAlign = 'center';     
-            drawingPen.textBaseline = 'top'; 
-            drawingPen.fillText(formatTime(time), canvasWidth/2,0);   
-            drawingPen.textAlign = 'right';
-            drawingPen.fillText(`RED no ${life}`, canvasWidth - 10, 0);
-        }
-        timerId = setInterval(() => {
-            if (life > 0) {
-                time++;
-            } else {
-                clearInterval(timerId);
-            }
-        }, 1000);
-        function lifeend(){
-            const canvasWidth = drawingBoard.width;
-            const canvasHeight = drawingBoard.height;
-            drawingPen.fillStyle = 'black';  
-            drawingPen.font = '20px sans-serif';
-            drawingPen.textAlign = 'center';     
-            drawingPen.textBaseline = 'middle';  
-            drawingPen.fillText(`미션해결 시간 ${formatTime(time)}`, canvasWidth / 2, canvasHeight / 2);
-            restartBtn.style.display = 'block';
-        }
-        let enemyCoords = [];
-        let life=1;
-        function drawenemy1() {
-            if (count === 0 && enemyCoords.length === 0) {
-                for (let i = 0; i < 5; i++) {
-                    let randomX = Math.floor(Math.random() * 571);
-                    let randomY = Math.floor(Math.random() * 571);
-                    enemyCoords.push({ x: randomX, y: randomY });
-                }
-                life=enemyCoords.length;
-            }
-            if(count===0){
-                drawingPen.fillStyle = 'red';
-                enemyCoords.forEach(enemy => {
-                    drawingPen.fillRect(enemy.x, enemy.y, 20, 20);
-                });
-            }
-        }
-        function collision1(){
-            for(let i=0;i<enemyCoords.length;i++){
-                let enemy=enemyCoords[i];
-                if((x+10)>enemy.x && x<(enemy.x+20) && (y+10)>enemy.y && y<(enemy.y+20)){
-                    count=1;
-                    enemyCoords.splice(i, 1);
-                    count = 0;
-                    life=life-1;
-                    break;
-                }
-            }
-        }
-        function drawHero(){
-            drawingPen.fillStyle='black';
-            drawingPen.fillRect(x,y,10,10);
-        }
-        function draw(){
-            drawingPen.fillText(`x: ${x} y: ${y}`,10,20);
-            drawingPen.clearRect(0,0,canvas.width,canvas.height);
-            if(life===0){
-                drawHero();
-                drawCoordinate();
-                drawtime(time);
-                lifeend();
-                return;
-            }
-            drawenemy1(); 
-            collision1();
-            drawHero();
-            move_limit();
-            drawCoordinate();
-            drawtime(time);
-        }
-        setInterval(draw,16);
+  <button id="restartBtn" style="display:none;">게임 재시작</button>
 
-        document.addEventListener('keydown',(e)=>{
-            switch(e.key){
-                case 'ArrowLeft': moveLeft(); break;
-                case 'ArrowRight': moveRight(); break;
-                case 'ArrowUp': moveUp(); break;
-                case 'ArrowDown': moveDown(); break;
-            }
+  <div class="pc-guide">
+    PC에서 접속했습니다. 방향키로 이동하세요. <br>
+    스마트폰에서 접속 시 보이는 버튼으로 이동하세요.
+  </div>
+
+  <script>
+    const drawingBoard = document.getElementById('canvas');
+    const drawingPen = drawingBoard.getContext('2d');
+    const restartBtn = document.getElementById('restartBtn');
+
+    function resizeCanvas() {
+      if (window.innerWidth <= 768) {
+        const size = Math.min(window.innerWidth, window.innerHeight);
+        drawingBoard.width = size;
+        drawingBoard.height = size;
+      } else {
+        drawingBoard.width = 600;
+        drawingBoard.height = 600;
+      }
+    }
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    let x = 20;
+    let y = 570;
+    let count = 0;
+
+    const moveAmout = 5;
+    let time = 0;
+    let timerId = null;
+    let enemyCoords = [];
+    let life = 1;
+
+    function moveRight() { x += moveAmout; }
+    function moveLeft() { x -= moveAmout; }
+    function moveDown() { y += moveAmout; }
+    function moveUp() { y -= moveAmout; }
+
+    function move_limit() {
+      if (x < 0) x = 0;
+      if (x > drawingBoard.width - 10) x = drawingBoard.width - 10;
+      if (y < 0) y = 0;
+      if (y > drawingBoard.height - 10) y = drawingBoard.height - 10;
+    }
+
+    function drawCoordinate() {
+      drawingPen.fillStyle = 'black';
+      drawingPen.font = '10px sans-serif';
+      drawingPen.fillText(`x: ${x} y: ${y}`, 55, 20);
+    }
+
+    function formatTime(sec) {
+      const minutes = String(Math.floor(sec / 60)).padStart(2, '0');
+      const seconds = String(sec % 60).padStart(2, '0');
+      return `${minutes}:${seconds} 초`;
+    }
+
+    function drawtime() {
+      const canvasWidth = drawingBoard.width;
+      drawingPen.fillStyle = 'black';
+      drawingPen.font = '20px sans-serif';
+      drawingPen.textAlign = 'center';
+      drawingPen.textBaseline = 'top';
+      drawingPen.fillText(formatTime(time), canvasWidth / 2, 0);
+      drawingPen.textAlign = 'right';
+      drawingPen.fillText(`RED no ${life}`, canvasWidth - 10, 0);
+    }
+
+    function startTimer() {
+      clearInterval(timerId);
+      timerId = setInterval(() => {
+        if (life > 0) {
+          time++;
+        } else {
+          clearInterval(timerId);
+        }
+      }, 1000);
+    }
+
+    function lifeend() {
+      const canvasWidth = drawingBoard.width;
+      const canvasHeight = drawingBoard.height;
+      drawingPen.fillStyle = 'black';
+      drawingPen.font = '20px sans-serif';
+      drawingPen.textAlign = 'center';
+      drawingPen.textBaseline = 'middle';
+      drawingPen.fillText(`미션해결 시간 ${formatTime(time)}`, canvasWidth / 2, canvasHeight / 2);
+      restartBtn.style.display = 'block';
+    }
+
+    function drawenemy1() {
+      if (count === 0 && enemyCoords.length === 0) {
+        for (let i = 0; i < 5; i++) {
+          let randomX = Math.floor(Math.random() * (drawingBoard.width - 20));
+          let randomY = Math.floor(Math.random() * (drawingBoard.height - 20));
+          enemyCoords.push({ x: randomX, y: randomY });
+        }
+        life = enemyCoords.length;
+      }
+      if (count === 0) {
+        drawingPen.fillStyle = 'red';
+        enemyCoords.forEach(enemy => {
+          drawingPen.fillRect(enemy.x, enemy.y, 20, 20);
         });
+      }
+    }
 
-        document.getElementById('leftBtn').addEventListener('click',moveLeft);
-        document.getElementById('rightBtn').addEventListener('click',moveRight);
-        document.getElementById('upBtn').addEventListener('click',moveUp);
-        document.getElementById('downBtn').addEventListener('click',moveDown);
-        restartBtn.addEventListener('click', () => {
-            x = 20;
-            y = 570;
-            enemyCoords = [];
-            count = 0;
-            life = 5;
-            time = 0;
-            restartBtn.style.display = 'none';
-            clearInterval(timerId);
-            timerId = setInterval(() => {
-                if (life > 0) {
-                    time++;
-                } else {
-                    clearInterval(timerId);
-                }
-            }, 1000);
-        });
-    </script>
+    function collision1() {
+      for (let i = 0; i < enemyCoords.length; i++) {
+        let enemy = enemyCoords[i];
+        if ((x + 10) > enemy.x && x < (enemy.x + 20) && (y + 10) > enemy.y && y < (enemy.y + 20)) {
+          count = 1;
+          enemyCoords.splice(i, 1);
+          count = 0;
+          life--;
+          break;
+        }
+      }
+    }
+
+    function drawHero() {
+      drawingPen.fillStyle = 'black';
+      drawingPen.fillRect(x, y, 10, 10);
+    }
+
+    function draw() {
+      drawingPen.clearRect(0, 0, drawingBoard.width, drawingBoard.height);
+      if (life === 0) {
+        drawHero();
+        drawCoordinate();
+        drawtime();
+        lifeend();
+        return;
+      }
+      drawenemy1();
+      collision1();
+      drawHero();
+      move_limit();
+      drawCoordinate();
+      drawtime();
+    }
+
+    startTimer();
+    setInterval(draw, 16);
+
+    document.addEventListener('keydown', (e) => {
+      switch (e.key) {
+        case 'ArrowLeft': moveLeft(); break;
+        case 'ArrowRight': moveRight(); break;
+        case 'ArrowUp': moveUp(); break;
+        case 'ArrowDown': moveDown(); break;
+      }
+    });
+
+    document.getElementById('leftBtn').addEventListener('click', moveLeft);
+    document.getElementById('rightBtn').addEventListener('click', moveRight);
+    document.getElementById('upBtn').addEventListener('click', moveUp);
+    document.getElementById('downBtn').addEventListener('click', moveDown);
+
+    restartBtn.addEventListener('click', () => {
+      x = 20;
+      y = drawingBoard.height - 30;
+      enemyCoords = [];
+      count = 0;
+      life = 5;
+      time = 0;
+      restartBtn.style.display = 'none';
+      startTimer();
+    });
+  </script>
 </body>
 </html>
