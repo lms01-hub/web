@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Web Animation(canvas_js_css)</title>
+<style>
+body { margin:0; padding:0; text-align:center; font-family:sans-serif; }
+#canvas { background:#dcd7c9; display:block; margin:0 auto; }
+.pc-guide { display:none; margin-top:10px; font-size:16px; color:#333; font-weight:bold; }
+@media (min-width:769px) { #canvas { width:600px; height:600px; } .pc-guide{ display:block;} }
+.controls { display:none; margin-top:10px; flex-direction:column; align-items:center; }
+.controls .row{ display:flex; justify-content:center; }
+.controls button { font-size:24px; padding:15px 20px; margin:5px; min-width:60px; border-radius:10px; background-color:#333; color:white; touch-action:none; user-select:none; -webkit-user-select:none; }
+.controls button:active{ background-color:#555; }
+@media (max-width:768px) { #canvas { width:100vw; height:100vw; } .controls{ display:block; } .pc-guide{ display:none; } }
+#restartBtn { display:none; font-size:20px; margin-top:10px; padding:10px 20px; }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+
+<div class="controls">
+  <div class="row"><button id="upBtn"></button></div>
+  <div class="row">
+    <button id="leftBtn"></button>
+    <button id="downBtn"></button>
+    <button id="rightBtn"></button>
+  </div>
+</div>
+
+<div class="pc-guide">
+  PC에서 접속했습니다. 방향키로 이동하세요
+  스마트폰은 버튼으로 이동하세요.
+</div>
+
+<button id="restartBtn" onclick="location.reload()">다시 시작</button>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+canvas.width = 600;
+canvas.height = 600;
+
+// 주인공 위치/속도
+let x = (canvas.width-10)/2;
+let y = (canvas.height-10)/2;
+const heroSize = 10;
+const enemySize = 20;
+const moveAmount = 5;
+
+// 모든 가능한 적 좌표 생성 (20px 단위)
+const positions = [];
+for(let i=0;i<30;i++){
+  for(let j=0;j<30;j++){
+    positions.push({x:i*20, y:j*20});
+  }
+}
+function shuffle(array){
+  for(let i=array.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
+// 적 배열
+let enemyX = [];
+let enemyY = [];
+let enemyColor = [];
+
+function initEnemies(){
+  shuffle(positions);
+  enemyX = [];
+  enemyY = [];
+  enemyColor = [];
+  for(let i=0;i<10;i++){ // 빨간색 10개
+    enemyX.push(positions[i].x);
+    enemyY.push(positions[i].y);
+    enemyColor.push('red');
+  }
+  for(let i=10;i<15;i++){ // 파란색 5개
+    enemyX.push(positions[i].x);
+    enemyY.push(positions[i].y);
+    enemyColor.push('blue');
+  }
+}
+initEnemies();
+
+// RED 적 수(life)
+let life = 10;
+
+// 타이머
+let time = 0;
+let timerId = null;
+function startTimer(){
+  if(timerId) clearInterval(timerId);
+  timerId = setInterval(()=>{ if(life>0) time++; },1000);
+}
+startTimer();
+
+// 초 → mm:ss 포맷
+function formatTime(seconds){
+  const m = Math.floor(seconds/60);
+  const s = seconds%60;
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+// 이동 제한
+function move_limit(){
+  if(x<0)x=0;
+  if(y<0)y=0;
+  if(x>canvas.width-heroSize)x=canvas.width-heroSize;
+  if(y>canvas.height-heroSize)y=canvas.height-heroSize;
+}
+
+// 그리기
+function drawHero(){
+  ctx.fillStyle='black';
+  ctx.fillRect(x,y,heroSize,heroSize);
+}
+
+function drawEnemies(){
+  for(let i=0;i<enemyX.length;i++){
+    ctx.fillStyle = enemyColor[i];
+    ctx.fillRect(enemyX[i], enemyY[i], enemySize, enemySize);
+  }
+}
+
+function drawInfo(){
+  ctx.fillStyle='black';
+  ctx.font='16px sans-serif';
+  ctx.fillText(`RED no: ${life}`, canvas.width-100,20);
+  ctx.fillText(`Time: ${formatTime(time)}`, 10,20); // mm:ss로 표시
+}
+
+function resetRedEnemies(){
+  // 기존 RED 제거
+  for(let j=enemyColor.length-1;j>=0;j--){
+    if(enemyColor[j]==='red'){
+      enemyX.splice(j,1);
+      enemyY.splice(j,1);
+      enemyColor.splice(j,1);
+    }
+  }
+  // RED 다시 10개 생성
+  shuffle(positions);
+  for(let k=0;k<10;k++){
+    enemyX.push(positions[k].x);
+    enemyY.push(positions[k].y);
+    enemyColor.push('red');
+  }
+  life = 10;
+}
+
+function collisionEnemies(){
+  for(let i=0;i<enemyX.length;i++){
+    if(x<enemyX[i]+enemySize && x+heroSize>enemyX[i] &&
+       y<enemyY[i]+enemySize && y+heroSize>enemyY[i]){
+      if(enemyColor[i]==='blue'){
+        resetRedEnemies(); // 파란 적 충돌 시 RED 10개 재생성
+      } else if(enemyColor[i]==='red'){
+        life--;
+      }
+      // 충돌 적 제거
+      enemyX.splice(i,1);
+      enemyY.splice(i,1);
+      enemyColor.splice(i,1);
+      i--;
+    }
+  }
+}
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawHero();
+  drawEnemies();
+  move_limit();
+  drawInfo();
+
+  if(life<=0){
+    ctx.fillStyle='black';
+    ctx.font='24px sans-serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText(`미션해결 시간 ${formatTime(time)}초`, canvas.width/2, canvas.height/2);
+    document.getElementById('restartBtn').style.display='block';
+    return;
+  }
+
+  if(keys.ArrowLeft) x-=moveAmount;
+  if(keys.ArrowRight) x+=moveAmount;
+  if(keys.ArrowUp) y-=moveAmount;
+  if(keys.ArrowDown) y+=moveAmount;
+
+  collisionEnemies();
+}
+setInterval(draw,16);
+
+// 방향키
+const keys={ArrowLeft:false,ArrowRight:false,ArrowUp:false,ArrowDown:false};
+document.addEventListener('keydown',e=>{ if(keys.hasOwnProperty(e.key)) keys[e.key]=true; });
+document.addEventListener('keyup',e=>{ if(keys.hasOwnProperty(e.key)) keys[e.key]=false; });
+
+// 버튼
+const setBtnHold=(key,isDown)=>{ keys[key]=isDown; };
+function bindButton(id,key){
+  const btn=document.getElementById(id);
+  btn.addEventListener('touchstart',()=>setBtnHold(key,true));
+  btn.addEventListener('touchend',()=>setBtnHold(key,false));
+  btn.addEventListener('mousedown',()=>setBtnHold(key,true));
+  btn.addEventListener('mouseup',()=>setBtnHold(key,false));
+  btn.addEventListener('mouseleave',()=>setBtnHold(key,false));
+}
+bindButton("leftBtn","ArrowLeft");
+bindButton("rightBtn","ArrowRight");
+bindButton("upBtn","ArrowUp");
+bindButton("downBtn","ArrowDown");
+
+</script>
+</body>
+</html>
