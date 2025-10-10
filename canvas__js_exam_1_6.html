@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Web Animation(canvas_js_css)[1단원-3]</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      font-family: sans-serif;
+    }
+    #canvas {
+      background: #dcd7c9;
+      display: block;
+      margin: 0 auto;
+    }
+    .pc-guide {
+      display: none;
+      margin-top: 10px;
+      font-size: 16px;
+      color: #333;
+      font-weight: bold;
+    }
+    @media (min-width: 769px) {
+      #canvas {
+        width: 600px;
+        height: 600px;
+      }
+      .pc-guide {
+        display: block;
+      }
+    }
+    .controls {
+      display: none;
+      margin-top: 10px;
+      flex-direction: column;
+      align-items: center;
+    }
+    .controls .row{
+      display: flex;
+      justify-content: center;
+    }
+    .controls button {
+      font-size: 24px;
+      padding: 15px 20px;
+      margin: 5px;
+      min-width: 60px;
+      border-radius: 10px;
+      background-color: #333;
+      color: white;
+      touch-action: none; /*터치 릴레이 방지*/
+      user-select: none;
+      -webkit-user-select: none; /*안드로이드/ios/크롬*/
+    }
+    .controls button:active{
+      background-color: #555;
+    }
+
+    @media (max-width: 768px) {
+      #canvas {
+        width: 100vw;
+        height: 100vw;
+      }
+      .controls {
+        display: block;
+      }
+      .pc-guide {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+      <!--애니매이션 화면 만들기-->
+      <canvas id="canvas"></canvas>
+      
+      <div class="controls">
+          <div class="row">
+            <button id="upBtn"></button>
+          </div>
+          <div class="row">
+            <button id="leftBtn"></button>
+            <button id="downBtn"></button>
+            <button id="rightBtn"></button>
+          </div>
+      </div>
+    <!-- PC전용 안내문구-->
+    
+        <div class="pc-guide">
+          PC에서 접속했습니다. 방향키로 이동하세요
+          스마트폰은 접속 시 보이는 버튼으로 이동하세요.
+        </div>
+        <script>
+          //캔버스 요소 JS변수만들기
+          const drawingBoard=document.getElementById('canvas');
+          //캔버스에 2D그림을 그리는 도구 변수만들기
+          const drawingPen=drawingBoard.getContext('2d');
+          //캔버스 내부 해상도는 무조건 600x600고정
+          drawingBoard.width=600;
+          drawingBoard.height=600;
+          let x=(drawingBoard.width-10)/2;
+          let y=(drawingBoard.height-10)/2;
+
+          //주인공 이동속도
+          const moveAmout=5;
+          //주인공 이동함수
+          function moveRight(){
+            x=x+moveAmout;
+          }
+          function moveLeft(){
+            x=x-moveAmout;
+          }
+          function moveDown(){
+            y=y+moveAmout;
+          }
+          function moveUp(){
+            y=y-moveAmout;
+          }
+          //주인공 이동제한
+          function move_limit(){
+              if(x<0){
+                x=0;
+              }
+          }
+          //캔버스 왼쪽 상단에 텍스트 출력함수
+          function drawCoordinate() {
+              drawingPen.fillStyle = 'black';
+              drawingPen.font = '10px sans-serif';
+              drawingPen.fillText(`x: ${x} y: ${y}`, 10, 20);
+          }
+          //주인공출력함수
+          function drawHero() {
+              drawingPen.fillStyle = 'black';
+              drawingPen.fillRect(x, y, 10, 10);
+          }
+          //방향키 눌림 상태 추적
+          const keys = {
+              ArrowLeft: false,
+              ArrowRight: false,
+              ArrowUp: false,
+              ArrowDown: false
+          };
+          document.addEventListener('keydown',(e)=>{
+        //e.key는 현재 선택한 키보드를 말한다.
+        // hasOwnProperty는 keys변수안의 값이 있으면 true 없으면 false를 반환한다.
+        // 즉 e.key로 keys에 정의 한 키보드가 선택되면 true를 반환해서 아래 조건문을 만족한다.
+        // 왼쪽 방향을 선택하면 선택된 키보드 기본값
+        // ArrowLeft:false를 true로 변경해서 function draw()함수 안쪽의
+        // if(keys.ArrowLeft)조건이 true가 되고 moveLeft(); 왼쪽이동 함수를 이동해서
+        // setInterval(draw,16); //60bps만큼 캐릭터가 이동한다 즉 타이머 속도만큼 주인공이 이동한다.
+              if(keys.hasOwnProperty(e.key)){
+                keys[e.key]=true;
+              }
+          });
+          document.addEventListener('keyup',(e)=>{
+              if(keys.hasOwnProperty(e.key)){
+                keys[e.key]=false;
+              }
+          });
+          function draw() {
+              drawingPen.clearRect(0, 0, drawingBoard.width, drawingBoard.height);
+              drawHero();
+              move_limit();
+              drawCoordinate();
+              if(keys.ArrowLeft) moveLeft();
+              if(keys.ArrowRight) moveRight();
+              if(keys.ArrowUp) moveUp();
+              if(keys.ArrowDown) moveDown();
+          }
+          setInterval(draw,16); //60FPS
+
+          //AAA
+          //모바일 버튼을 누르고 있을때도 상태관리
+          const setBtnHold=(key,isDown)=>{
+            //setBtnHold는 특정키의 눌림상타를 저장
+            //key,true를 전달하면 받은 상태 저장함
+            keys[key]=isDown;
+          };
+
+          //BBB
+          const bindButton=(id,key)=>{
+            const btn=document.getElementById(id);
+            btn.addEventListener('touchstart',()=>setBtnHold(key,true));
+            btn.addEventListener('touchend',()=>setBtnHold(key,false));
+            btn.addEventListener('mousedown',()=>setBtnHold(key,true));
+            btn.addEventListener('mouseup',()=>setBtnHold(key,false));
+            btn.addEventListener('mouseleave',()=>setBtnHold(key,false));
+          };
+
+          //CCC
+          //마우스로 각 버튼을 선택시 키보드 방향키 동작 연결
+          bindButton("leftBtn","ArrowLeft");
+          bindButton("rightBtn","ArrowRight");
+          bindButton("upBtn","ArrowUp");
+          bindButton("downBtn","ArrowDown");
+
+        </script>
+</body>
+</html>
+      
+ 
+    
