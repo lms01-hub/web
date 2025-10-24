@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Web Animation(canvas_js_css)</title>
+<style>
+  body { margin:0; padding:0; text-align:center; font-family:sans-serif; }
+  #canvas { background:#dcd7c9; display:block; margin:0 auto; }
+  .pc-guide { display:none; margin-top:10px; font-size:16px; color:#333; font-weight:bold; }
+  @media (min-width:769px) { #canvas { width:600px; height:600px; } .pc-guide{ display:block;} }
+  .controls { display:none; margin-top:10px; flex-direction:column; align-items:center; }
+  .controls .row{ display:flex; justify-content:center; }
+  .controls button {
+    font-size:24px; padding:15px 20px; margin:5px; min-width:60px;
+    border-radius:10px; background-color:#333; color:white;
+    touch-action:none; user-select:none; -webkit-user-select:none;
+  }
+  .controls button:active{ background-color:#555; }
+  #startBtn {
+    position: absolute;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+    background: #4caf50;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    padding: 30px 60px;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    text-align: center;
+    transition: all 0.2s ease;
+    user-select: none;
+  }
+  #startBtn:hover{
+    background: #45a049;
+    transform: translate(-50%,-50%) scale(1.05);
+  }
+  #startBtn:active{
+    transform: translate(-50%,-50%) scale(0.95);
+  }
+  .messageBox {
+    display: none;
+    position: absolute;
+    top: 305px;
+    left: 50%;
+    transform: translate(-50%,-50%);
+    background: #fff;
+    border: 2px solid #333;
+    padding: 20px;
+    z-index: 10;
+  }
+  @media (max-width:768px) {
+    #canvas { width:100vw; height:100vw; }
+    .controls{ display:block; }
+    .pc-guide{ display:none; }
+  }
+  #restartBtn {
+    display:none;
+    font-size:20px;
+    margin-top:10px;
+    padding:10px 20px;
+  }
+</style>
+<script type="module">
+  import { initializeApp} from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp} from "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyDdjYf_8gLtqSnCtfgj_sZ4w1Bh2JVQTHM",
+    authDomain: "my-webgame-project1-f4e1b.firebaseapp.com",
+    projectId: "my-webgame-project1-f4e1b",
+    storageBucket: "my-webgame-project1-f4e1b.firebasestorage.app",
+    messagingSenderId: "143089634435",
+    appId: "1:143089634435:web:e5ee71a77d74a071a99fb6"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  window._db = db;
+</script>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+
+<div id="startBtn">Start</div>
+<div class="messageBox" id="msgBox">
+  <div id="msgText"></div>
+  <input type="text" id="userId" placeholder="(영어+숫자) 5~15자이내">
+  <br>
+  <button id="saveBtn">저장</button>
+  <button id="cancelBtn">취소</button>
+</div>
+
+<div class="controls">
+  <div class="row">
+    <button id="upBtn">↑</button>
+  </div>
+  <div class="row">
+    <button id="leftBtn">←</button>
+    <button id="downBtn">↓</button>
+    <button id="rightBtn">→</button>
+  </div>
+</div>
+
+<div class="pc-guide">
+  PC에서 접속했습니다. 방향키로 이동하세요<br>
+  스마트폰은 버튼으로 이동하세요.
+</div>
+
+<button id="restartBtn" onclick="location.reload()">다시 시작</button>
+
+<script type="module">
+  import { containsSwearWord } from "https://cdn.jsdelivr.net/gh/bc-develop2000/swear_words@main/swear_words.js";
+  window.containsSwearWord = containsSwearWord;
+</script>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+canvas.width = 600;
+canvas.height = 600;
+
+// 주인공 위치/속도
+let x = (canvas.width - 10) / 2;
+let y = (canvas.height - 10) / 2;
+const heroSize = 10;
+const enemySize = 20;
+const moveAmount = 5;
+
+// 목적지 박스
+const redBox = { x: 550, y: 550, size: 50 };
+
+// 게임 상태
+let startTime;
+let gameStarted = false;
+let elapsedTime = 0;
+let stopTime = null;
+
+// 요소
+const msgBox = document.getElementById('msgBox');
+const msgText = document.getElementById('msgText');
+const userIdInput = document.getElementById('userId');
+const saveBtn = document.getElementById('saveBtn');
+const cancelBtn = document.getElementById('cancelBtn');
+const startBtn = document.getElementById('startBtn');
+
+// 함수들
+function drawRedBox() {
+  ctx.fillStyle = 'red';
+  ctx.fillRect(redBox.x, redBox.y, redBox.size, redBox.size);
+}
+
+function drawTimer() {
+  ctx.fillStyle = 'blue';
+  ctx.font = '20px sans-serif';
+  if (gameStarted) {
+    const timeNow = (Date.now() - startTime) / 1000;
+    ctx.fillText(`시간: ${timeNow.toFixed(2)}초`, 10, 40);
+  } else if (stopTime !== null) {
+    ctx.fillText(`시간: ${stopTime.toFixed(2)}초`, 10, 40);
+  }
+}
+
+function checkCollision() {
+  const hasRedEnemies = enemyColor.includes('red');
+  if(hasRedEnemies) return false;
+  if (
+    gameStarted &&
+    x + heroSize > redBox.x &&
+    x < redBox.x + redBox.size &&
+    y + heroSize > redBox.y &&
+    y < redBox.y + redBox.size
+    
+  ) {
+    gameStarted = false;
+    stopTime = (Date.now() - startTime) / 1000;
+    showMessage(`충돌! 경과 시간: ${stopTime.toFixed(2)}초\n저장 아이디를 입력하세요`);
+    return true;
+  }
+  return false;
+}
+
+function showMessage(text) {
+  msgText.innerText = text;
+  msgBox.style.display = 'block';
+  userIdInput.value = '';
+  userIdInput.focus();
+}
+
+saveBtn.addEventListener('click', async () => {
+  const val = userIdInput.value.trim();
+  const re = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z0-9]{5,15}$/;
+
+  if (typeof window.containsSwearWord !== 'function') {
+    alert('욕설 필터 모듈을 불러오지 못했습니다. (ESM import 확인)');
+    console.error('[swear] containsSwearWord not ready')
+    return;
+  }
+
+  if (containsSwearWord(val, 'eng')) {
+    alert('사용할 수 없는 단어가 포함되어 있습니다.');
+    userIdInput.focus();
+    return;
+  }
+
+  if (!re.test(val)) {
+    alert('아이디는 영어와 숫자를 반드시 포함한 5~15자여야 합니다.');
+    userIdInput.focus();
+    return;
+  }
+
+  alert(`입력한 아이디는: ${val}입니다.`);
+
+  const record = Number.isFinite(stopTime) ? Number(stopTime.toFixed(2)) :0;
+  try{
+    const db = window._db;
+
+    if(!db){
+      alert("DB 초기화 실패: Firebase 설정을 확인하세요.");
+      return;
+    }
+
+    const{collection,addDoc,serverTimestamp} = await import(
+      "https://www.gstatic.com/firebasejs/12.3.0/firebase-firestore.js"
+    );
+
+    await addDoc(collection(db, "scores"),{
+      userId: val,
+      time: record,
+      createdAt: serverTimestamp()
+    });
+
+    alert(`저장되었습니다!\nID: ${val}\n기록: ${record}초`);
+    msgBox.style.display='none';
+    alert("저장성공 : 다음 단원에서는 성공시 rankpage.html 페이지로 이동을 학습합니다.");
+  }catch(err){
+    console.error(err);
+    alert("저장 중 오류가 발생했습니다. 콘솔을 확인하세요.");
+  }
+  msgBox.style.display='none';
+  resetGame();
+});
+
+cancelBtn.addEventListener('click', () => {
+  msgBox.style.display = 'none';
+  resetGame();
+});
+
+startBtn.addEventListener('click', () => {
+  gameStarted = true;
+  startTime = Date.now();
+  startBtn.style.display = 'none';
+});
+
+// 리셋 함수
+function resetGame() {
+  gameStarted = false;
+  stopTime = null;
+  startBtn.style.display = 'block';
+  x = (canvas.width - heroSize) / 2;
+  y = (canvas.height - heroSize) / 2;
+  initEnemies();
+  life = 10;
+  time = 0;
+}
+
+// 적 관련
+const positions = [];
+for (let i = 0; i < 30; i++) {
+  for (let j = 0; j < 30; j++) {
+    positions.push({ x: i * 20, y: j * 20 });
+  }
+}
+
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
+let enemyX = [], enemyY = [], enemyColor = [];
+function initEnemies() {
+  shuffle(positions);
+  enemyX = [], enemyY = [], enemyColor = [];
+  for (let i = 0; i < 10; i++) {
+    enemyX.push(positions[i].x);
+    enemyY.push(positions[i].y);
+    enemyColor.push('red');
+  }
+  for (let i = 10; i < 15; i++) {
+    enemyX.push(positions[i].x);
+    enemyY.push(positions[i].y);
+    enemyColor.push('blue');
+  }
+}
+initEnemies();
+
+let life = 10;
+let time = 0;
+let timerId = null;
+function startTimer() {
+  if (timerId) clearInterval(timerId);
+  timerId = setInterval(() => {
+    if (life > 0 && gameStarted) time++;
+  }, 1000);
+}
+startTimer();
+
+function formatTime(sec) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+function move_limit() {
+  if (x < 0) x = 0;
+  if (y < 0) y = 0;
+  if (x > canvas.width - heroSize) x = canvas.width - heroSize;
+  if (y > canvas.height - heroSize) y = canvas.height - heroSize;
+}
+
+function drawHero() {
+  ctx.fillStyle = 'black';
+  ctx.fillRect(x, y, heroSize, heroSize);
+}
+
+function drawEnemies() {
+  for (let i = 0; i < enemyX.length; i++) {
+    ctx.fillStyle = enemyColor[i];
+    ctx.fillRect(enemyX[i], enemyY[i], enemySize, enemySize);
+  }
+}
+
+function drawInfo() {
+  ctx.fillStyle = 'black';
+  ctx.font = '16px sans-serif';
+  ctx.fillText(`RED no: ${life}`, canvas.width - 100, 20);
+  ctx.fillText(`Time: ${formatTime(time)}`, 10, 20);
+}
+
+function resetRedEnemies() {
+  for (let i = enemyColor.length - 1; i >= 0; i--) {
+    if (enemyColor[i] === 'red') {
+      enemyX.splice(i, 1);
+      enemyY.splice(i, 1);
+      enemyColor.splice(i, 1);
+    }
+  }
+  shuffle(positions);
+  for (let i = 0; i < 10; i++) {
+    enemyX.push(positions[i].x);
+    enemyY.push(positions[i].y);
+    enemyColor.push('red');
+  }
+  life = 10;
+}
+
+function collisionEnemies() {
+  for (let i = 0; i < enemyX.length; i++) {
+    if (
+      x < enemyX[i] + enemySize &&
+      x + heroSize > enemyX[i] &&
+      y < enemyY[i] + enemySize &&
+      y + heroSize > enemyY[i]
+    ) {
+      if (enemyColor[i] === 'blue') {
+        resetRedEnemies();
+      } else if (enemyColor[i] === 'red') {
+        life--;
+      }
+      enemyX.splice(i, 1);
+      enemyY.splice(i, 1);
+      enemyColor.splice(i, 1);
+      i--;
+    }
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawHero();
+  drawEnemies();
+  move_limit();
+  drawInfo();
+  drawRedBox();
+  drawTimer();
+  checkCollision();
+
+  if (gameStarted && stopTime === null) {
+    if (keys.ArrowLeft) x -= moveAmount;
+    if (keys.ArrowRight) x += moveAmount;
+    if (keys.ArrowUp) y -= moveAmount;
+    if (keys.ArrowDown) y += moveAmount;
+  }
+
+  if (life <= 0) {
+    ctx.fillStyle = 'black';
+    ctx.font = '24px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`미션해결 시간 ${formatTime(time)}초`, canvas.width / 2, canvas.height / 2);
+    document.getElementById('restartBtn').style.display = 'block';
+    return;
+  }
+
+  collisionEnemies();
+}
+setInterval(draw, 16);
+
+// 방향키
+const keys = { ArrowLeft: false, ArrowRight: false, ArrowUp: false, ArrowDown: false };
+document.addEventListener('keydown', e => { if (keys.hasOwnProperty(e.key)) keys[e.key] = true; });
+document.addEventListener('keyup', e => { if (keys.hasOwnProperty(e.key)) keys[e.key] = false; });
+
+// 버튼
+const setBtnHold = (key, isDown) => { keys[key] = isDown; };
+function bindButton(id, key) {
+  const btn = document.getElementById(id);
+  btn.addEventListener('touchstart', () => setBtnHold(key, true));
+  btn.addEventListener('touchend', () => setBtnHold(key, false));
+  btn.addEventListener('mousedown', () => setBtnHold(key, true));
+  btn.addEventListener('mouseup', () => setBtnHold(key, false));
+  btn.addEventListener('mouseleave', () => setBtnHold(key, false));
+}
+bindButton("leftBtn", "ArrowLeft");
+bindButton("rightBtn", "ArrowRight");
+bindButton("upBtn", "ArrowUp");
+bindButton("downBtn", "ArrowDown");
+
+</script>
+</body>
+</html>
